@@ -48,8 +48,13 @@ app.use((error, _req, res, _next) => {
 });
 
 connectDB()
-  .then(() => app.listen(port, () => console.log(`API listening on http://localhost:${port}`)))
+  .then(() => {
+    if (process.env.NODE_ENV !== "production") {
+      app.listen(port, () => console.log(`API listening on http://localhost:${port}`));
+    }
+  })
   .catch((error) => {
     console.error("Failed to start API", error);
-    process.exit(1);
   });
+
+export default app;
