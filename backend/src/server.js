@@ -3,7 +3,17 @@ import dotenv from "dotenv";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
+import path from "path";
 import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Explicitly load environment variables from backend/.env and root .env
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+dotenv.config();
+
 import { connectDB } from "./config/db.js";
 import { isSupabaseConfigured } from "./config/supabase.js";
 import { uploadDir } from "./middleware/upload.js";
@@ -12,8 +22,6 @@ import analyticsRoutes from "./routes/analyticsRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import candidateRoutes from "./routes/candidateRoutes.js";
 import jobRoutes from "./routes/jobRoutes.js";
-
-dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
