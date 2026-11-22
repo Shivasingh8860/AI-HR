@@ -39,8 +39,8 @@ export default function ResetPassword() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-4">
             <Lock size={24} />
           </div>
-          <h2 className="text-3xl font-bold text-text-primary">New Password</h2>
-          <p className="mt-2 text-text-muted text-sm">Secure your account with a new access key.</p>
+          <h2 className="text-2xl font-bold text-text-primary">Reset Password</h2>
+          <p className="mt-1 text-text-muted text-xs">Enter your new account password below.</p>
         </div>
 
         {error && (

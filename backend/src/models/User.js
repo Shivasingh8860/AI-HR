@@ -1,5 +1,7 @@
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
+import { isSupabaseConfigured } from "../config/supabase.js";
+import { SupabaseUser } from "./supabaseAdapter.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -7,8 +9,7 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: 8, select: false },
     role: { type: String, enum: ["Admin", "HR"], default: "HR" },
-    otp: { type: String, select: false },
-    otpExpires: { type: Date, select: false },
+    isActive: { type: Boolean, default: true },
     resetPasswordToken: { type: String, select: false },
     resetPasswordExpires: { type: Date, select: false },
     googleId: { type: String, unique: true, sparse: true },
@@ -17,14 +18,45 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-userSchema.pre("save", async function hashPassword(next) {
-  if (!this.isModified("password")) return next();
+userSchema.pre("save", async function hashPassword() {
+  if (!this.isModified("password")) return;
   this.password = await bcrypt.hash(this.password, 12);
-  next();
 });
 
 userSchema.methods.comparePassword = function comparePassword(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-export default mongoose.model("User", userSchema);
+const MongoUser = mongoose.models.User || mongoose.model("User", userSchema);
+
+const UserProxy = new Proxy(MongoUser, {
+  get(target, prop) {
+    if (isSupabaseConfigured() && prop in SupabaseUser) {
+      return SupabaseUser[prop];
+    }
+    return target[prop];
+  },
+  construct(target, args) {
+    if (isSupabaseConfigured()) {
+      const data = args[0] || {};
+      const instance = {
+        _id: data._id || data.id,
+        id: data.id || data._id,
+        ...data,
+        comparePassword: async (pass) => bcrypt.compare(pass, instance.password),
+        save: async () => {
+          if (!instance._id) {
+            const created = await SupabaseUser.create(instance);
+            Object.assign(instance, created);
+            return instance;
+          }
+          return SupabaseUser.create(instance);
+        }
+      };
+      return instance;
+    }
+    return new target(...args);
+  }
+});
+
+export default UserProxy;

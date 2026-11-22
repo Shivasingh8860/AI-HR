@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import { isSupabaseConfigured } from "../config/supabase.js";
+import { SupabaseCandidate } from "./supabaseAdapter.js";
 
 const analysisSchema = new mongoose.Schema(
   {
@@ -45,7 +47,8 @@ const candidateSchema = new mongoose.Schema(
     resumeFile: {
       originalName: String,
       path: String,
-      mimeType: String
+      mimeType: String,
+      url: String
     },
     analysis: analysisSchema,
     matches: [matchSchema],
@@ -66,4 +69,36 @@ candidateSchema.index({ uploadedBy: 1, createdAt: -1 });
 candidateSchema.index({ experienceYears: -1 });
 candidateSchema.index({ "matches.score": -1 });
 candidateSchema.index({ skills: 1 });
-export default mongoose.model("Candidate", candidateSchema);
+
+const MongoCandidate = mongoose.models.Candidate || mongoose.model("Candidate", candidateSchema);
+
+const CandidateProxy = new Proxy(MongoCandidate, {
+  get(target, prop) {
+    if (isSupabaseConfigured() && prop in SupabaseCandidate) {
+      return SupabaseCandidate[prop];
+    }
+    return target[prop];
+  },
+  construct(target, args) {
+    if (isSupabaseConfigured()) {
+      const data = args[0] || {};
+      const instance = {
+        _id: data._id || data.id,
+        id: data.id || data._id,
+        ...data,
+        save: async () => {
+          if (!instance._id) {
+            const created = await SupabaseCandidate.create(instance);
+            Object.assign(instance, created);
+            return instance;
+          }
+          return SupabaseCandidate.create(instance);
+        }
+      };
+      return instance;
+    }
+    return new target(...args);
+  }
+});
+
+export default CandidateProxy;

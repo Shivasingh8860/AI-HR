@@ -8,15 +8,15 @@ export default function ScoreBar({ score = 0 }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between px-0.5">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">AI Relevance</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Job Match</span>
         <span className={`text-xs font-bold ${score >= 80 ? 'text-primary' : score >= 60 ? 'text-secondary' : 'text-rose-400'}`}>
           {score}%
         </span>
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-border shadow-inner">
         <div 
-          className={`h-full rounded-full transition-all duration-1000 ease-out ${colorClass}`} 
-          style={{ width: `${score}%` }} 
+          className={`h-full rounded-full transition-all duration-700 ease-out ${colorClass}`} 
+          style={{ width: `${Math.min(100, Math.max(0, score))}%` }} 
         />
       </div>
     </div>

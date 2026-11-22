@@ -1,4 +1,4 @@
-import { BrainCircuit, Zap, ArrowRight, UserPlus, LogIn, Eye, EyeOff, Mail, Lock, Shield } from "lucide-react";
+import { Zap, ArrowRight, UserPlus, LogIn, Eye, EyeOff, Mail, Lock, Shield, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -36,7 +36,14 @@ export default function Login() {
       }
       navigate("/");
     } catch (err) {
-      setError(err.response?.data?.message || "Authentication failed.");
+      const serverMsg = err.response?.data?.message;
+      if (serverMsg && typeof serverMsg === "string") {
+        setError(serverMsg);
+      } else if (err.code === "ERR_NETWORK" || err.message?.includes("Network Error")) {
+        setError("Cannot connect to server. Please verify the backend API (port 5000) and MongoDB are running.");
+      } else {
+        setError("Authentication failed. Please check your credentials.");
+      }
     } finally {
       setLoading(false);
     }
@@ -48,7 +55,7 @@ export default function Login() {
       await googleLogin(response.credential);
       navigate("/");
     } catch (err) {
-      setError("Google login failed.");
+      setError(err.response?.data?.message || "Google authentication failed.");
     } finally {
       setLoading(false);
     }
@@ -56,38 +63,38 @@ export default function Login() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-6">
-      <div className="grid w-full max-w-6xl gap-12 lg:grid-cols-2 lg:items-center">
+      <div className="grid w-full max-w-5xl gap-12 lg:grid-cols-2 lg:items-center">
         
         {/* Left Side: Branding */}
-        <section className="hidden space-y-8 lg:block animate-fade-in">
+        <section className="hidden space-y-6 lg:block animate-fade-in">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary shadow-glow-primary">
-              <Zap size={28} className="text-background fill-background" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary shadow-glow-primary">
+              <Zap size={24} className="text-background fill-background" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-text-primary">Smart HR</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-text-primary">Smart HR</h1>
           </div>
           
-          <div className="space-y-6">
-            <h2 className="text-6xl font-extrabold leading-[1.1] tracking-tight text-text-primary">
-              Hire with <span className="text-primary underline decoration-primary/30">Precision.</span>
+          <div className="space-y-4">
+            <h2 className="text-4xl font-extrabold leading-tight tracking-tight text-text-primary">
+              Streamline hiring with <span className="text-primary">automated matching.</span>
             </h2>
-            <p className="max-w-md text-xl text-text-secondary leading-relaxed">
-              The industry standard for AI-backed talent acquisition and automated resume intelligence.
+            <p className="max-w-md text-base text-text-secondary leading-relaxed">
+              Parse resumes instantly, score candidates against job criteria, and track your recruitment pipeline in one place.
             </p>
           </div>
 
-          <div className="grid gap-6 pt-6">
+          <div className="grid gap-3 pt-2">
             {[
-              { icon: Shield, title: "Identity Vault", desc: "Secure encrypted storage for all HR operations." },
-              { icon: BrainCircuit, title: "Neural Matching", desc: "High-precision scoring against job descriptors." }
+              { icon: Shield, title: "Role-Based Access", desc: "Dedicated HR and Admin views with data isolation." },
+              { icon: CheckCircle2, title: "Multi-Factor Scoring", desc: "Evaluates skills, experience, and educational background." }
             ].map((feature, i) => (
-              <div key={i} className="flex gap-4 p-4 rounded-2xl bg-surface border border-border shadow-inner-glass">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <feature.icon size={20} />
+              <div key={i} className="flex gap-3.5 p-3.5 rounded-xl bg-surface border border-border">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <feature.icon size={18} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-text-primary">{feature.title}</h3>
-                  <p className="text-sm text-text-muted">{feature.desc}</p>
+                  <h3 className="text-sm font-semibold text-text-primary">{feature.title}</h3>
+                  <p className="text-xs text-text-muted mt-0.5">{feature.desc}</p>
                 </div>
               </div>
             ))}
@@ -96,44 +103,44 @@ export default function Login() {
 
         {/* Right Side: Form */}
         <section className="animate-fade-in flex flex-col justify-center">
-          <div className="card w-full max-w-md border-primary/10 shadow-2xl lg:mx-auto bg-surface/50 backdrop-blur-xl p-8">
-            <div className="mb-8 text-center lg:text-left">
-              <h2 className="text-3xl font-bold text-text-primary capitalize">
-                {mode === "login" ? "Welcome Back" : mode === "register" ? "Create Account" : "Reset Password"}
+          <div className="card w-full max-w-md border-border shadow-2xl lg:mx-auto bg-surface/70 backdrop-blur-xl p-8">
+            <div className="mb-6 text-center lg:text-left">
+              <h2 className="text-2xl font-bold text-text-primary">
+                {mode === "login" ? "Sign In" : mode === "register" ? "Create Account" : "Reset Password"}
               </h2>
-              <p className="mt-2 text-text-muted text-sm">
-                {mode === "login" ? "Enter your credentials to access your workspace." : mode === "register" ? "Join the future of recruitment intelligence." : "Enter your email to receive a recovery link."}
+              <p className="mt-1 text-text-muted text-xs">
+                {mode === "login" ? "Enter your email and password to access your dashboard." : mode === "register" ? "Register to start managing your hiring pipeline." : "Enter your email to receive a password reset link."}
               </p>
             </div>
 
             {error && (
-              <div className="mb-6 rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-3 text-sm text-rose-400">
+              <div className="mb-5 rounded-xl bg-rose-500/10 border border-rose-500/20 px-3.5 py-2.5 text-xs text-rose-400">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {mode === "register" && (
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted px-1">Full Name</label>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted px-1">Full Name</label>
                   <input 
                     required
                     className="field" 
-                    placeholder="John Doe"
+                    placeholder="Jane Doe"
                     value={form.name} 
                     onChange={(e) => setForm({ ...form, name: e.target.value })} 
                   />
                 </div>
               )}
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted px-1">Email Address</label>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted px-1">Email Address</label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-3 text-text-muted" size={16} />
+                  <Mail className="absolute left-3.5 top-3 text-text-muted" size={15} />
                   <input 
                     required
                     type="email"
-                    className="field !pl-11" 
+                    className="field !pl-10" 
                     placeholder="name@company.com"
                     value={form.email} 
                     onChange={(e) => setForm({ ...form, email: e.target.value })} 
@@ -142,29 +149,32 @@ export default function Login() {
               </div>
 
               {mode !== "forgot" && (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <div className="flex justify-between items-center px-1">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Password</label>
-                    {mode === "login" && (
-                      <button type="button" onClick={() => setMode("forgot")} className="text-[10px] font-bold text-primary hover:underline">Forgot?</button>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Password</label>
+                    {mode === "login" ? (
+                      <button type="button" onClick={() => setMode("forgot")} className="text-[10px] font-semibold text-primary hover:underline">Forgot password?</button>
+                    ) : (
+                      <span className="text-[10px] text-text-muted">Min 8 characters</span>
                     )}
                   </div>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-3 text-text-muted" size={16} />
+                    <Lock className="absolute left-3.5 top-3 text-text-muted" size={15} />
                     <input 
                       required
                       type={showPassword ? "text" : "password"}
-                      className="field !pl-11 !pr-11" 
-                      placeholder="••••••••"
+                      minLength={mode === "register" ? 8 : 1}
+                      className="field !pl-10 !pr-10" 
+                      placeholder={mode === "register" ? "At least 8 characters" : "••••••••"}
                       value={form.password} 
                       onChange={(e) => setForm({ ...form, password: e.target.value })} 
                     />
                     <button 
                       type="button" 
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-3 text-text-muted hover:text-text-primary transition-colors"
+                      className="absolute right-3.5 top-3 text-text-muted hover:text-text-primary"
                     >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
@@ -173,28 +183,28 @@ export default function Login() {
               <button 
                 type="submit" 
                 disabled={loading}
-                className="btn btn-primary w-full h-12 mt-2 text-base shadow-glow-primary"
+                className="btn btn-primary w-full h-11 mt-2 text-sm font-semibold"
               >
-                {loading ? "Synchronizing..." : (
-                  <span className="flex items-center gap-2 font-bold">
-                    {mode === "login" ? "Access Workspace" : mode === "register" ? "Create Account" : "Send Reset Link"}
-                    <ArrowRight size={18} />
+                {loading ? "Please wait..." : (
+                  <span className="flex items-center gap-2">
+                    {mode === "login" ? "Sign In" : mode === "register" ? "Create Account" : "Send Reset Link"}
+                    <ArrowRight size={16} />
                   </span>
                 )}
               </button>
             </form>
 
-            {mode === "login" && (
-              <div className="mt-6 space-y-6">
+            {mode === "login" && import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+              <div className="mt-5 space-y-4">
                 <div className="relative flex items-center justify-center">
                   <div className="w-full border-t border-border"></div>
-                  <span className="absolute bg-surface px-4 text-[10px] font-bold uppercase tracking-widest text-text-muted">Or Connect with</span>
+                  <span className="absolute bg-surface px-3 text-[10px] font-semibold uppercase tracking-wider text-text-muted">Or continue with</span>
                 </div>
                 
                 <div className="flex justify-center">
                   <GoogleLogin 
                     onSuccess={onGoogleSuccess} 
-                    onError={() => setError("Google auth failed")}
+                    onError={() => setError("Google login failed")}
                     theme="filled_black"
                     shape="pill"
                     width="100%"
@@ -203,19 +213,19 @@ export default function Login() {
               </div>
             )}
 
-            <div className="mt-8 pt-6 border-t border-border text-center">
+            <div className="mt-6 pt-5 border-t border-border text-center">
               <button 
                 type="button" 
-                className="text-sm font-bold text-text-secondary hover:text-primary transition-colors"
+                className="text-xs font-semibold text-text-secondary hover:text-primary transition-colors"
                 onClick={() => {
                   setError("");
                   setMode(mode === "login" ? "register" : "login");
                 }}
               >
                 {mode === "login" ? (
-                  <span className="flex items-center gap-2"><UserPlus size={16} /> New here? Create an account</span>
+                  <span className="flex items-center gap-1.5 justify-center"><UserPlus size={14} /> Don't have an account? Sign up</span>
                 ) : (
-                  <span className="flex items-center gap-2"><LogIn size={16} /> Already have an account? Sign in</span>
+                  <span className="flex items-center gap-1.5 justify-center"><LogIn size={14} /> Already registered? Sign in</span>
                 )}
               </button>
             </div>

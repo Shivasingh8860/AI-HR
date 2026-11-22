@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import { isSupabaseConfigured } from "../config/supabase.js";
+import { SupabaseJob } from "./supabaseAdapter.js";
 
 const jobSchema = new mongoose.Schema(
   {
@@ -14,4 +16,35 @@ const jobSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Job", jobSchema);
+const MongoJob = mongoose.models.Job || mongoose.model("Job", jobSchema);
+
+const JobProxy = new Proxy(MongoJob, {
+  get(target, prop) {
+    if (isSupabaseConfigured() && prop in SupabaseJob) {
+      return SupabaseJob[prop];
+    }
+    return target[prop];
+  },
+  construct(target, args) {
+    if (isSupabaseConfigured()) {
+      const data = args[0] || {};
+      const instance = {
+        _id: data._id || data.id,
+        id: data.id || data._id,
+        ...data,
+        save: async () => {
+          if (!instance._id) {
+            const created = await SupabaseJob.create(instance);
+            Object.assign(instance, created);
+            return instance;
+          }
+          return SupabaseJob.create(instance);
+        }
+      };
+      return instance;
+    }
+    return new target(...args);
+  }
+});
+
+export default JobProxy;

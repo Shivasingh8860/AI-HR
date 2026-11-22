@@ -10,6 +10,7 @@
     "seed": "node sample-data/seed.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.2",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -22,9 +23,7 @@
     "mongoose": "^8.9.5",
     "multer": "^2.1.1",
     "nodemailer": "^8.0.7",
-    "openai": "^4.78.1",
     "pdf-parse": "^1.1.1",
-    "smart-hr-resume-analyzer": "file:..",
     "zod": "^3.24.1"
   },
   "devDependencies": {

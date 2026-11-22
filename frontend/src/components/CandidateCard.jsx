@@ -1,4 +1,4 @@
-import { Mail, Star, ExternalLink, Calendar, MapPin } from "lucide-react";
+import { Mail, Star, ExternalLink, Calendar, MapPin, UserCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import ScoreBar from "./ScoreBar.jsx";
 
@@ -42,6 +42,12 @@ export default function CandidateCard({ candidate }) {
           <MapPin size={12} />
           <span className="truncate">{topMatch?.jobTitle || "Unmatched"}</span>
         </div>
+        {candidate.uploadedBy?.name && (
+          <div className="flex items-center gap-2 text-[11px] text-text-muted">
+            <UserCheck size={12} className="text-primary" />
+            <span className="truncate">HR: {candidate.uploadedBy.name}</span>
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">
