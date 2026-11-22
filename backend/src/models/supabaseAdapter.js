@@ -169,39 +169,59 @@ function normalizeCandidateRow(row) {
 // USER MODEL ADAPTER FOR SUPABASE
 // -------------------------------------------------------------
 export const SupabaseUser = {
-  async findOne(query) {
+  findOne(query) {
     const supabase = getSupabase();
-    if (!supabase) return null;
+    const queryObj = {
+      async exec() {
+        if (!supabase) return null;
 
-    let req = supabase.from("users").select("*");
+        let req = supabase.from("users").select("*");
 
-    if (query.$or) {
-      const orClauses = query.$or.map((clause) => {
-        if (clause.googleId) return `google_id.eq.${clause.googleId}`;
-        if (clause.email) return `email.ilike.${clause.email.toLowerCase()}`;
-        return "";
-      }).filter(Boolean);
-      req = req.or(orClauses.join(","));
-    } else if (query.email) {
-      req = req.ilike("email", query.email.toLowerCase());
-      if (query._id && query._id.$ne) {
-        req = req.neq("id", query._id.$ne);
+        if (query.$or) {
+          const orClauses = query.$or.map((clause) => {
+            if (clause.googleId) return `google_id.eq.${clause.googleId}`;
+            if (clause.email) return `email.ilike.${clause.email.toLowerCase()}`;
+            return "";
+          }).filter(Boolean);
+          req = req.or(orClauses.join(","));
+        } else if (query.email) {
+          req = req.ilike("email", query.email.toLowerCase());
+          if (query._id && query._id.$ne) {
+            req = req.neq("id", query._id.$ne);
+          }
+        } else if (query.resetPasswordToken) {
+          req = req.eq("reset_password_token", query.resetPasswordToken);
+          if (query.resetPasswordExpires && query.resetPasswordExpires.$gt) {
+            req = req.gt("reset_password_expires", new Date().toISOString());
+          }
+        } else if (query._id || query.id) {
+          req = req.eq("id", query._id || query.id);
+        }
+
+        const { data, error } = await req.maybeSingle();
+        if (error || !data) return null;
+        return normalizeUserRow(data);
+      },
+      select() {
+        return this;
+      },
+      populate() {
+        return this;
+      },
+      lean() {
+        return this;
+      },
+      then(resolve, reject) {
+        return this.exec().then(resolve, reject);
+      },
+      catch(reject) {
+        return this.exec().catch(reject);
       }
-    } else if (query.resetPasswordToken) {
-      req = req.eq("reset_password_token", query.resetPasswordToken);
-      if (query.resetPasswordExpires && query.resetPasswordExpires.$gt) {
-        req = req.gt("reset_password_expires", new Date().toISOString());
-      }
-    } else if (query._id || query.id) {
-      req = req.eq("id", query._id || query.id);
-    }
-
-    const { data, error } = await req.maybeSingle();
-    if (error || !data) return null;
-    return normalizeUserRow(data);
+    };
+    return queryObj;
   },
 
-  async findById(id) {
+  findById(id) {
     return this.findOne({ _id: id });
   },
 
@@ -368,29 +388,49 @@ export const SupabaseJob = {
     return queryObj;
   },
 
-  async findOne(query) {
+  findOne(query) {
     const supabase = getSupabase();
-    if (!supabase) return null;
+    const queryObj = {
+      async exec() {
+        if (!supabase) return null;
 
-    let req = supabase.from("jobs").select("*, createdBy:users(id, name, email)");
-    if (query._id || query.id) {
-      req = req.eq("id", query._id || query.id);
-    }
-    if (query.createdBy) {
-      req = req.eq("created_by", query.createdBy);
-    }
+        let req = supabase.from("jobs").select("*, createdBy:users(id, name, email)");
+        if (query._id || query.id) {
+          req = req.eq("id", query._id || query.id);
+        }
+        if (query.createdBy) {
+          req = req.eq("created_by", query.createdBy);
+        }
 
-    const { data, error } = await req.maybeSingle();
-    if (error || !data) return null;
-    const normalized = normalizeJobRow(data);
-    if (data.createdBy) {
-      normalized.createdBy = {
-        _id: data.createdBy.id,
-        name: data.createdBy.name,
-        email: data.createdBy.email
-      };
-    }
-    return normalized;
+        const { data, error } = await req.maybeSingle();
+        if (error || !data) return null;
+        const normalized = normalizeJobRow(data);
+        if (data.createdBy) {
+          normalized.createdBy = {
+            _id: data.createdBy.id,
+            name: data.createdBy.name,
+            email: data.createdBy.email
+          };
+        }
+        return normalized;
+      },
+      select() {
+        return this;
+      },
+      populate() {
+        return this;
+      },
+      lean() {
+        return this;
+      },
+      then(resolve, reject) {
+        return this.exec().then(resolve, reject);
+      },
+      catch(reject) {
+        return this.exec().catch(reject);
+      }
+    };
+    return queryObj;
   },
 
   async updateMany(filter, update) {
@@ -589,33 +629,53 @@ export const SupabaseCandidate = {
     return count || 0;
   },
 
-  async findOne(query) {
+  findOne(query) {
     const supabase = getSupabase();
-    if (!supabase) return null;
+    const queryObj = {
+      async exec() {
+        if (!supabase) return null;
 
-    let req = supabase.from("candidates").select("*, uploadedBy:users(id, name, email)");
+        let req = supabase.from("candidates").select("*, uploadedBy:users(id, name, email)");
 
-    if (query._id || query.id) {
-      req = req.eq("id", query._id || query.id);
-    }
-    if (query.uploadedBy) {
-      req = req.eq("uploaded_by", query.uploadedBy);
-    }
-    if (query.email) {
-      req = req.ilike("email", query.email);
-    }
+        if (query._id || query.id) {
+          req = req.eq("id", query._id || query.id);
+        }
+        if (query.uploadedBy) {
+          req = req.eq("uploaded_by", query.uploadedBy);
+        }
+        if (query.email) {
+          req = req.ilike("email", query.email);
+        }
 
-    const { data, error } = await req.maybeSingle();
-    if (error || !data) return null;
-    const normalized = normalizeCandidateRow(data);
-    if (data.uploadedBy) {
-      normalized.uploadedBy = {
-        _id: data.uploadedBy.id,
-        name: data.uploadedBy.name,
-        email: data.uploadedBy.email
-      };
-    }
-    return normalized;
+        const { data, error } = await req.maybeSingle();
+        if (error || !data) return null;
+        const normalized = normalizeCandidateRow(data);
+        if (data.uploadedBy) {
+          normalized.uploadedBy = {
+            _id: data.uploadedBy.id,
+            name: data.uploadedBy.name,
+            email: data.uploadedBy.email
+          };
+        }
+        return normalized;
+      },
+      select() {
+        return this;
+      },
+      populate() {
+        return this;
+      },
+      lean() {
+        return this;
+      },
+      then(resolve, reject) {
+        return this.exec().then(resolve, reject);
+      },
+      catch(reject) {
+        return this.exec().catch(reject);
+      }
+    };
+    return queryObj;
   },
 
   async findOneAndUpdate(query, update, options = {}) {
