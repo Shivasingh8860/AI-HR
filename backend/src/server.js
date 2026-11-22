@@ -65,6 +65,7 @@ app.use(async (_req, res, next) => {
 });
 
 app.get("/health", (_req, res) => res.json({ status: "ok", service: "smart-hr-api" }));
+app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "smart-hr-api" }));
 app.use("/uploads", express.static(uploadsPath));
 app.use("/uploads", express.static(uploadDir));
 app.use("/src/uploads", express.static(uploadsPath));
@@ -91,7 +92,7 @@ app.use((error, _req, res, _next) => {
   });
 });
 
-if (!process.env.VERCEL && process.env.NODE_ENV !== "test") {
+if (process.env.NODE_ENV !== "test" && (!process.env.VERCEL || process.env.PORT)) {
   if (isSupabaseConfigured()) {
     app.listen(port, () => console.log(`Smart HR API running with Supabase backend on http://localhost:${port}`));
   } else {
@@ -102,7 +103,7 @@ if (!process.env.VERCEL && process.env.NODE_ENV !== "test") {
       .catch((error) => {
         console.error("Failed to connect to database:", error.message);
         app.listen(port, () => {
-          console.warn(`Smart HR API listening on http://localhost:${port} (WARNING: MongoDB is currently disconnected)`);
+          console.warn(`Smart HR API listening on http://localhost:${port} (WARNING: Database is currently disconnected)`);
         });
       });
   }
